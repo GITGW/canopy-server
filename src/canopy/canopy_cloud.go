@@ -86,7 +86,7 @@ func processPayload(conn datalayer.Connection, payload string, cnt int32) string
 
 
     /* Store sensor data */
-    if cnt % 100 != 0 {
+    if cnt % 10 == 0 {
         for k, v := range payloadObj {
             /* hack */
             if k == "device_id" || k == "sddl" {
