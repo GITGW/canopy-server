@@ -234,6 +234,24 @@ func (device *CassDevice) HistoricNotifications() ([]datalayer.Notification, err
     return notifications, nil
 }
 
+// Increment the database's count of # of samples.
+// This is needed for data trimming.
+func incrementVarSampleCount(
+        session *gocql.Session, 
+        device_id gocql.UUID, 
+        vardecl string) error {
+
+    err := session.Query(`
+            UPDATE var_sample_counts
+            SET count = count + 1
+            WHERE device_id=? 
+                AND vardecl=?
+    `, device_id, vardecl).Exec()
+    if err != nil {
+        return err;
+    }
+    return nil
+}
 
 func (device *CassDevice)InsertNotification(notifyType int, t time.Time, msg string) error {
     err := device.conn.session.Query(`
@@ -250,7 +268,7 @@ func (device *CassDevice) LastActivityTime() *time.Time {
     return device.last_seen
 }
 
-func (device *CassDevice) insertSensorSample_int(propname string, t time.Time, value int32) error {
+func (device *CassDevice) insertSample_int(vardecl, propname string, t time.Time, value int32) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_int (device_id, propname, time, value)
             VALUES (?, ?, ?, ?)
@@ -258,10 +276,10 @@ func (device *CassDevice) insertSensorSample_int(propname string, t time.Time, v
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
-func (device *CassDevice) insertSensorSample_float(propname string, t time.Time, value float32) error {
+func (device *CassDevice) insertSample_float(vardecl, propname string, t time.Time, value float32) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_float (device_id, propname, time, value)
             VALUES (?, ?, ?, ?)
@@ -269,10 +287,10 @@ func (device *CassDevice) insertSensorSample_float(propname string, t time.Time,
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
-func (device *CassDevice) insertSensorSample_double(propname string, t time.Time, value float64) error {
+func (device *CassDevice) insertSample_double(vardecl, propname string, t time.Time, value float64) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_double (device_id, propname, time, value)
             VALUES (?, ?, ?, ?)
@@ -280,10 +298,10 @@ func (device *CassDevice) insertSensorSample_double(propname string, t time.Time
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
-func (device *CassDevice) insertSensorSample_timestamp(propname string, t time.Time, value time.Time) error {
+func (device *CassDevice) insertSample_timestamp(vardecl, propname string, t time.Time, value time.Time) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_timestamp (device_id, propname, time, value)
             VALUES (?, ?, ?, ?)
@@ -291,10 +309,10 @@ func (device *CassDevice) insertSensorSample_timestamp(propname string, t time.T
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
-func (device *CassDevice) insertSensorSample_boolean(propname string, t time.Time, value bool) error {
+func (device *CassDevice) insertSample_boolean(vardecl, propname string, t time.Time, value bool) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_boolean (device_id, propname, time, value)
             VALUES (?, ?, ?, ?)
@@ -302,11 +320,10 @@ func (device *CassDevice) insertSensorSample_boolean(propname string, t time.Tim
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
-// TODO: rename this routine
-func (device *CassDevice) insertSensorSample_void(propname string, t time.Time) error {
+func (device *CassDevice) insertSample_void(vardecl, propname string, t time.Time) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_void (device_id, propname, time)
             VALUES (?, ?, ?)
@@ -314,11 +331,10 @@ func (device *CassDevice) insertSensorSample_void(propname string, t time.Time) 
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
-// TODO: rename this routine
-func (device *CassDevice) insertSensorSample_string(propname string, t time.Time, value string) error {
+func (device *CassDevice) insertSample_string(vardecl, propname string, t time.Time, value string) error {
     err := device.conn.session.Query(`
             INSERT INTO propval_string (device_id, propname, time, value)
             VALUES (?, ?, ?, ?)
@@ -326,82 +342,83 @@ func (device *CassDevice) insertSensorSample_string(propname string, t time.Time
     if err != nil {
         return err;
     }
-    return nil;
+    return incrementVarSampleCount(device.conn.session, device.ID(), vardecl)
 }
 
 
 func (device *CassDevice) InsertSample(varDef sddl.VarDef, t time.Time, value interface{}) error {
     varname := varDef.Name()
+    vardecl := varDef.Declaration()
 
     switch varDef.Datatype() {
     case sddl.DATATYPE_VOID:
-        return device.insertSensorSample_void(varname, t);
+        return device.insertSample_void(vardecl, varname, t);
     case sddl.DATATYPE_STRING:
         v, ok := value.(string)
         if !ok {
             return fmt.Errorf("InsertSample expects string value for %s", varname)
         }
-        return device.insertSensorSample_string(varname, t, v);
+        return device.insertSample_string(vardecl, varname, t, v);
     case sddl.DATATYPE_BOOL:
         v, ok := value.(bool)
         if !ok {
             return fmt.Errorf("InsertSample expects bool value for %s", varname)
         }
-        return device.insertSensorSample_boolean(varname, t, v);
+        return device.insertSample_boolean(vardecl, varname, t, v);
     case sddl.DATATYPE_INT8:
         v, ok := value.(int8)
         if !ok {
             return fmt.Errorf("InsertSample expects int8 value for %s", varname)
         }
-        return device.insertSensorSample_int(varname, t, int32(v));
+        return device.insertSample_int(vardecl, varname, t, int32(v));
     case sddl.DATATYPE_UINT8:
         v, ok := value.(uint8)
         if !ok {
             return fmt.Errorf("InsertSample expects uint8 value for %s", varname)
         }
-        return device.insertSensorSample_int(varname, t, int32(v));
+        return device.insertSample_int(vardecl, varname, t, int32(v));
     case sddl.DATATYPE_INT16:
         v, ok := value.(int16)
         if !ok {
             return fmt.Errorf("InsertSample expects int16 value for %s", varname)
         }
-        return device.insertSensorSample_int(varname, t, int32(v));
+        return device.insertSample_int(vardecl, varname, t, int32(v));
     case sddl.DATATYPE_UINT16:
         v, ok := value.(uint16)
         if !ok {
             return fmt.Errorf("InsertSample expects uint16 value for %s", varname)
         }
-        return device.insertSensorSample_int(varname, t, int32(v));
+        return device.insertSample_int(vardecl, varname, t, int32(v));
     case sddl.DATATYPE_INT32:
         v, ok := value.(int32)
         if !ok {
             return fmt.Errorf("InsertSample expects int32 value for %s", varname)
         }
-        return device.insertSensorSample_int(varname, t, v);
+        return device.insertSample_int(vardecl, varname, t, v);
     case sddl.DATATYPE_UINT32:
         v, ok := value.(uint32)
         if !ok {
             return fmt.Errorf("InsertSample expects uint32 value for %s", varname)
         }
-        return device.insertSensorSample_int(varname, t, int32(v)) // TODO: verify this works as expected
+        return device.insertSample_int(vardecl, varname, t, int32(v)) // TODO: verify this works as expected
     case sddl.DATATYPE_FLOAT32:
         v, ok := value.(float32)
         if !ok {
             return fmt.Errorf("InsertSample expects float32 value for %s", varname)
         }
-        return device.insertSensorSample_float(varname, t, v);
+        return device.insertSample_float(vardecl, varname, t, v);
     case sddl.DATATYPE_FLOAT64:
         v, ok := value.(float64)
         if !ok {
             return fmt.Errorf("InsertSample expects float64 value for %s", varname)
         }
-        return device.insertSensorSample_double(varname, t, v);
+        return device.insertSample_double(vardecl, varname, t, v);
     case sddl.DATATYPE_DATETIME:
         v, ok := value.(time.Time)
         if !ok {
             return fmt.Errorf("InsertSample expects time.Time value for %s", varname)
         }
-        return device.insertSensorSample_timestamp(varname, t, v);
+        return device.insertSample_timestamp(vardecl, varname, t, v);
     default:
         return fmt.Errorf("InsertSample unsupported datatype ", varDef.Datatype())
     }
