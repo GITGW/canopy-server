@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Gregory Prisament
+ * Copyright 2014-2015 Gregory Prisament
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ import (
 //      +---------------------------------+
 //      |                                 |
 //
-// Instead we use:
+// Even better would be to use:
 //
 //      CREATE TABLE propval_<datatype> (
 //          device_id uuid,
@@ -128,6 +128,25 @@ import (
 //
 //  So instead, we create a separate table for each datatype.
 //
+//  256 bytes / sample (Accounting for overhead, replication, etc).
+//
+//  However, even this approach has problems.  First of all, the number of rows
+//  may grow very large if we recieve a lot of sample data.  This article
+//  suggests keeping rows to under 10MB of storage:
+//  http://rubyscale.com/blog/2011/03/06/basic-time-series-with-cassandra/
+//
+//  Also, we need an easy way to trim away old data and downsample for high
+//  performance fetching.
+//
+//      CREATE TABLE vardata_<datatype> (
+//          device_id uuid,
+//          propname text,
+//          lod int,
+//          lod int,
+//          time timestamp,
+//          value <datatype>,
+//          PRIMARY KEY ((device_id, propname), time)
+//      ) WITH COMPACT STORAGE
 //
 //  You can gain insight into the actual structure of a CF by running:
 //
