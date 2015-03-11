@@ -36,7 +36,7 @@
 //
 //  To create an Inbox, you must first be running a Pigeon RPC Server.
 //
-package jobqueue
+package pigeon
 
 import (
     "canopy/config"

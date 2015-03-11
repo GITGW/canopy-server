@@ -19,8 +19,8 @@ import (
     "canopy/canolog"
     "canopy/config"
     "canopy/datalayer"
-    "canopy/jobqueue"
     "canopy/mail"
+    "canopy/pigeon"
     "encoding/base64"
     "encoding/json"
     "errors"
@@ -56,7 +56,7 @@ type RestRequestInfo struct {
     Config config.Config
     Device datalayer.Device
     Cookies map[string]string
-    PigeonOutbox jobqueue.Outbox
+    PigeonOutbox pigeon.Outbox
     URLVars map[string]string
     UserCtx map[string]interface{}
 }
@@ -84,14 +84,14 @@ func parseBasicAuth(authHeader []string) (username string, password string, err 
     return parts[0], parts[1], nil
 }
 
-func RestSetError(resp jobqueue.Response, err RestError) {
+func RestSetError(resp pigeon.Response, err RestError) {
     resp.SetBody(map[string]interface{}{
         "http-status" : err.StatusCode(),
         "http-body" : err.ResponseBody(),
     })
 }
 
-func RestSetErrorClearCookies(resp jobqueue.Response, err RestError) {
+func RestSetErrorClearCookies(resp pigeon.Response, err RestError) {
     resp.SetBody(map[string]interface{}{
         "http-status" : err.StatusCode(),
         "http-body" : err.ResponseBody(),
@@ -101,8 +101,8 @@ func RestSetErrorClearCookies(resp jobqueue.Response, err RestError) {
 
 // Wrapper for handling pigeon requests that originated from
 // CanopyRestJobForwarder
-func RestJobWrapper(handler RestJobHandler) jobqueue.HandlerFunc {
-    return func(jobKey string, userCtxItf interface{}, req jobqueue.Request, resp jobqueue.Response) {
+func RestJobWrapper(handler RestJobHandler) pigeon.HandlerFunc {
+    return func(jobKey string, userCtxItf interface{}, req pigeon.Request, resp pigeon.Response) {
         // This expects to recieve the following over the wire from the Pigeon
         // client:
         //  {

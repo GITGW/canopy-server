@@ -16,8 +16,8 @@ package main
 import (
     "canopy/canolog"
     "canopy/config"
-    "canopy/jobqueue"
     "canopy/jobs"
+    "canopy/pigeon"
     "canopy/rest"
     "canopy/webapp"
     "canopy/ws"
@@ -108,7 +108,7 @@ func main() {
     }
     canolog.Info(cfg.ToString())
 
-    pigeonSys, err := jobqueue.NewPigeonSystem(cfg)
+    pigeonSys, err := pigeon.NewPigeonSystem(cfg)
     if err != nil {
         canolog.Error("Error initializing messaging system (Pigeon):", err)
         return

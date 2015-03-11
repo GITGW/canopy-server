@@ -18,7 +18,7 @@ package rest
 import (
     "canopy/config"
     "canopy/canolog"
-    "canopy/jobqueue"
+    "canopy/pigeon"
     "github.com/gorilla/mux"
     "github.com/gorilla/sessions"
     "net/http"
@@ -28,7 +28,7 @@ func rootRedirectHandler(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/mgr/index.html", 301);
 }
 
-func AddRoutes(r *mux.Router, cfg config.Config, pigeonSys jobqueue.System) error {
+func AddRoutes(r *mux.Router, cfg config.Config, pigeonSys pigeon.System) error {
     store := sessions.NewCookieStore([]byte(cfg.OptProductionSecret()))
     
     outbox := pigeonSys.NewOutbox()

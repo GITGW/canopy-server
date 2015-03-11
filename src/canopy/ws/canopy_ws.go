@@ -17,17 +17,17 @@
 package ws
 
 import (
-    "time"
-    "encoding/json"
-    "code.google.com/p/go.net/websocket"
-    "io"
-    "net"
     "canopy/canolog"
     "canopy/config"
     "canopy/datalayer"
     "canopy/datalayer/cassandra_datalayer"
-    "canopy/jobqueue"
+    "canopy/pigeon"
     "canopy/service"
+    "code.google.com/p/go.net/websocket"
+    "encoding/json"
+    "io"
+    "net"
+    "time"
 )
 
 
@@ -35,7 +35,7 @@ import (
     return (pigeonSys.Mailbox(deviceIdString) != nil)
 }*/
 
-func NewCanopyWebsocketServer(cfg config.Config, outbox jobqueue.Outbox, pigeonServer jobqueue.Server) func(ws *websocket.Conn) {
+func NewCanopyWebsocketServer(cfg config.Config, outbox pigeon.Outbox, pigeonServer pigeon.Server) func(ws *websocket.Conn) {
     // Main websocket server routine.
     // This event loop runs until the websocket connection is broken.
     return func(ws *websocket.Conn) {
@@ -43,8 +43,8 @@ func NewCanopyWebsocketServer(cfg config.Config, outbox jobqueue.Outbox, pigeonS
 
         var cnt int32
         var device datalayer.Device
-        var inbox jobqueue.Inbox
-        var inboxReciever jobqueue.RecieveHandler
+        var inbox pigeon.Inbox
+        var inboxReciever pigeon.RecieveHandler
         lastPingTime := time.Now()
         
         cnt = 0
@@ -79,7 +79,7 @@ func NewCanopyWebsocketServer(cfg config.Config, outbox jobqueue.Outbox, pigeonS
                             canolog.Error("Error initializing inbox:", err)
                             return
                         }
-                        inboxReciever = jobqueue.NewRecieveHandler()
+                        inboxReciever = pigeon.NewRecieveHandler()
                         inbox.SetHandler(inboxReciever)
 
                         err = device.UpdateWSConnected(true)

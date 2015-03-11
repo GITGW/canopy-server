@@ -16,8 +16,8 @@ package rest
 
 import (
     "canopy/canolog"
-    "canopy/jobqueue"
     "canopy/mail"
+    "canopy/pigeon"
 )
 
 type RestSideEffects struct {
@@ -72,7 +72,7 @@ func (sideEffect *RestSideEffects) SendEmail() mail.MailMessage {
 //  1) Sends emails
 //  2) Appends "set-cookies" and "clear-cookies" to the response object, as
 //  appropriate.
-func (sideEffect *RestSideEffects) Perform(req jobqueue.Request, resp jobqueue.Response) error {
+func (sideEffect *RestSideEffects) Perform(req pigeon.Request, resp pigeon.Response) error {
     if len(sideEffect.setCookies) > 0 {
         resp.AppendToBody("set-cookies", sideEffect.setCookies)
     }

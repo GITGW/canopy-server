@@ -16,7 +16,7 @@ package rest
 
 import(
     "canopy/canolog"
-    "canopy/jobqueue"
+    "canopy/pigeon"
     "fmt"
     "github.com/gorilla/mux"
     "github.com/gorilla/sessions"
@@ -30,7 +30,7 @@ func CanopyRestJobForwarder(
         jobKey string, 
         cookieStore *sessions.CookieStore,
         allowOrigin string,
-        outbox jobqueue.Outbox) http.HandlerFunc {
+        outbox pigeon.Outbox) http.HandlerFunc {
 
     return func(w http.ResponseWriter, r *http.Request) {
 

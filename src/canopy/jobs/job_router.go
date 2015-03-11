@@ -16,13 +16,13 @@ package jobs
 
 import (
     "canopy/config"
-    "canopy/mail"
     "canopy/datalayer/cassandra_datalayer"
-    "canopy/jobqueue"
     "canopy/jobs/rest"
+    "canopy/mail"
+    "canopy/pigeon"
 )
 
-func InitJobServer(cfg config.Config, pigeonServer jobqueue.Server) error {
+func InitJobServer(cfg config.Config, pigeonServer pigeon.Server) error {
     mailer, err := mail.NewMailClient(cfg)
     if err != nil {
         return err
@@ -40,7 +40,7 @@ func InitJobServer(cfg config.Config, pigeonServer jobqueue.Server) error {
     }
     userCtx["db-conn"] = conn
 
-    routes := map[string]jobqueue.HandlerFunc{
+    routes := map[string]pigeon.HandlerFunc{
         "api/activate": rest.RestJobWrapper(rest.ApiActivateHandler),
         "api/create_account": rest.RestJobWrapper(rest.ApiCreateAccountHandler),
         "api/create_devices": rest.RestJobWrapper(rest.ApiCreateDevicesHandler),
